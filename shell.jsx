@@ -80,49 +80,97 @@ function Loader({ onDone }) {
   );
 }
 
-function Cursor() {
+function Cursor({ accent = "#F4A93C" }) {
   const dotRef = React.useRef(null);
   const ringRef = React.useRef(null);
+  const canvasRef = React.useRef(null);
+
   React.useEffect(() => {
-    const dot = dotRef.current, ring = ringRef.current;
-    if (!dot || !ring) return;
-    let x = window.innerWidth / 2, y = window.innerHeight / 2;
-    let rx = x, ry = y;
-    function move(e) { x = e.clientX; y = e.clientY; }
+    const dot = dotRef.current, ring = ringRef.current, cvs = canvasRef.current;
+    if (!dot || !ring || !cvs) return;
+    const ctx = cvs.getContext("2d");
+    let W = window.innerWidth, H = window.innerHeight;
+    cvs.width = W; cvs.height = H;
+
+    function onResize() {
+      W = window.innerWidth; H = window.innerHeight;
+      cvs.width = W; cvs.height = H;
+    }
+    window.addEventListener("resize", onResize);
+
+    // resolve accent to rgb for canvas (CSS oklch → browser rgb)
+    let accentRgb = "244,169,60";
+    try {
+      const tmp = document.createElement("div");
+      tmp.style.cssText = "position:fixed;top:-99px;width:1px;height:1px;color:var(--accent)";
+      document.body.appendChild(tmp);
+      const c = getComputedStyle(tmp).color;
+      document.body.removeChild(tmp);
+      const m = c.match(/\d+/g);
+      if (m && m.length >= 3) accentRgb = `${m[0]},${m[1]},${m[2]}`;
+    } catch (_) {}
+
+    let x = W / 2, y = H / 2, rx = x, ry = y;
+    const trail = [];
+
+    function move(e) {
+      x = e.clientX; y = e.clientY;
+      trail.push({ x, y, life: 1, size: Math.random() * 2.2 + 0.6 });
+      if (trail.length > 32) trail.shift();
+    }
     function down() { ring.classList.add("click"); }
-    function up() { ring.classList.remove("click"); }
+    function up()   { ring.classList.remove("click"); }
     function over(e) {
-      const t = e.target.closest("a, button, .project, .arch-node, .vnav-item");
-      if (t) ring.classList.add("hover");
+      if (e.target.closest("a, button, .project, .arch-node, .vnav-item")) ring.classList.add("hover");
     }
     function out(e) {
-      const t = e.target.closest("a, button, .project, .arch-node, .vnav-item");
-      if (t) ring.classList.remove("hover");
+      if (e.target.closest("a, button, .project, .arch-node, .vnav-item")) ring.classList.remove("hover");
     }
     window.addEventListener("mousemove", move);
     window.addEventListener("mousedown", down);
     window.addEventListener("mouseup", up);
     document.addEventListener("mouseover", over);
     document.addEventListener("mouseout", out);
+
     let raf;
     function tick() {
       rx += (x - rx) * 0.18;
       ry += (y - ry) * 0.18;
-      dot.style.transform = `translate(${x}px, ${y}px) translate(-50%,-50%)`;
-      ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
+      dot.style.transform  = `translate(${x}px,${y}px) translate(-50%,-50%)`;
+      ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+
+      ctx.clearRect(0, 0, W, H);
+      for (let i = trail.length - 1; i >= 0; i--) {
+        const p = trail[i];
+        p.life -= 0.052;
+        if (p.life <= 0) { trail.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${accentRgb},${(p.life * 0.55).toFixed(3)})`;
+        ctx.fill();
+      }
       raf = requestAnimationFrame(tick);
     }
     raf = requestAnimationFrame(tick);
+
     return () => {
       cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mousedown", down);
       window.removeEventListener("mouseup", up);
       document.removeEventListener("mouseover", over);
       document.removeEventListener("mouseout", out);
     };
-  }, []);
-  return (<><div className="cursor-dot" ref={dotRef}></div><div className="cursor-ring" ref={ringRef}></div></>);
+  }, [accent]);
+
+  return (
+    <>
+      <canvas ref={canvasRef} className="cursor-trail" />
+      <div className="cursor-dot" ref={dotRef}></div>
+      <div className="cursor-ring" ref={ringRef}></div>
+    </>
+  );
 }
 
 function ProjectDetail({ project, onClose, accent }) {

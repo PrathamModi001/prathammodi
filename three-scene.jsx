@@ -269,6 +269,22 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     const nebulaB = new THREE.Mesh(new THREE.PlaneGeometry(180, 90), nebulaMat2);
     nebulaB.position.set(2, 12, -46); scene.add(nebulaB);
 
+    // ── lens flare at accent light — billboard cross + soft core ──────────────
+    const flareMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(accent), transparent: true, opacity: 0.07,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const flareCoreMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(accent), transparent: true, opacity: 0.15,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const flareGroup = new THREE.Group();
+    flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(16, 0.07), flareMat));
+    flareGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(0.07, 16), flareMat));
+    flareGroup.add(new THREE.Mesh(new THREE.CircleGeometry(2.0, 32), flareCoreMat));
+    flareGroup.position.copy(accentLight.position);
+    scene.add(flareGroup);
+
     // ── camera path (scroll-driven flythrough — 2.5× deeper for cinematic depth) ──
     const camCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0,  4,  38),
@@ -381,8 +397,13 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       pGeo.attributes.position.needsUpdate = true;
       points.rotation.y = t * 0.01;
 
-      // accent light pulse
-      accentLight.intensity = 3.5 + Math.sin(t * 1.2) * 0.6;
+      // accent light pulse + flare billboard
+      const lightPulse = 3.5 + Math.sin(t * 1.2) * 0.6;
+      accentLight.intensity = lightPulse;
+      flareGroup.lookAt(camera.position);
+      const flarePulse = 0.82 + Math.sin(t * 1.9) * 0.18;
+      flareMat.opacity = 0.065 * flarePulse;
+      flareCoreMat.opacity = 0.13 * flarePulse;
 
       renderer.render(scene, camera);
       raf = requestAnimationFrame(tick);

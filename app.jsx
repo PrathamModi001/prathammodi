@@ -29,7 +29,7 @@ function App() {
 
   return (
     <>
-      <Cursor />
+      <Cursor accent={accent} />
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
       {tweaks.grain && <div className="grain" />}
       <div className="vignette" />

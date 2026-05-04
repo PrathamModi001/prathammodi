@@ -49,6 +49,32 @@ function ScrambleText({ text, active }) {
   return <>{out}</>;
 }
 
+function AnimatedStat({ n, l, active, delay }) {
+  const numRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!active || !numRef.current) return;
+    const gsap = window.gsap;
+    if (!gsap) { numRef.current.textContent = n; return; }
+    const match = n.match(/^([\d.]+)(.*)/);
+    if (!match) { numRef.current.textContent = n; return; }
+    const target = parseFloat(match[1]);
+    const suffix = match[2];
+    const isInt = !n.includes(".");
+    const obj = { val: 0 };
+    gsap.to(obj, {
+      val: target, duration: 2.4, delay: delay || 0, ease: "power3.out",
+      onUpdate() { if (numRef.current) numRef.current.textContent = (isInt ? Math.round(obj.val) : obj.val.toFixed(1)) + suffix; },
+      onComplete() { if (numRef.current) numRef.current.textContent = n; },
+    });
+  }, [active]);
+  return (
+    <div className={`stat ${active ? "on" : ""}`} style={{ transitionDelay: `${delay || 0}s` }}>
+      <div className="stat-num"><em ref={numRef}>{n}</em></div>
+      <div className="stat-label">{l}</div>
+    </div>
+  );
+}
+
 const MARQUEE_ITEMS = [
   { text: "AVAILABLE · 2026", accent: true },
   { text: "BENGALURU" },
@@ -88,6 +114,31 @@ function HeroSection({ accent }) {
     window.addEventListener("__loader_done", onLoaded);
     return () => { clearTimeout(t); window.removeEventListener("__loader_done", onLoaded); };
   }, []);
+
+  // hero parallax: center text drifts slower than scroll (depth illusion)
+  React.useEffect(() => {
+    if (!ready) return;
+    const gsap = window.gsap, ST = window.ScrollTrigger;
+    if (!gsap || !ST) return;
+    gsap.registerPlugin(ST);
+    const hero = document.getElementById("home");
+    if (!hero) return;
+    const ctx = gsap.context(() => {
+      gsap.to(".hero-center", {
+        yPercent: -14, scale: 0.97, ease: "none",
+        scrollTrigger: { trigger: hero, start: "top top", end: "80% top", scrub: 1.2 },
+      });
+      gsap.to(".hero-eyebrow", {
+        yPercent: -22, opacity: 0, ease: "none",
+        scrollTrigger: { trigger: hero, start: "top top", end: "50% top", scrub: 1 },
+      });
+      gsap.to(".hero-foot", {
+        yPercent: 18, opacity: 0, ease: "none",
+        scrollTrigger: { trigger: hero, start: "top top", end: "50% top", scrub: 1 },
+      });
+    });
+    return () => ctx.revert();
+  }, [ready]);
 
   const lines = [
     [{ t: "Pratham", italic: false }],
@@ -201,17 +252,10 @@ function IdentityReveal({ accent }) {
           </div>
         </div>
         <div className="stat-row">
-          {[
-            { n: "120k", l: "peak rps shipped" },
-            { n: "12B", l: "spans / day pipeline" },
-            { n: "9 yrs", l: "in production" },
-            { n: "4", l: "nines, sustained" },
-          ].map((s, i) => (
-            <div key={i} className={`stat ${on ? "on" : ""}`} style={{ transitionDelay: `${0.6 + i * 0.12}s` }}>
-              <div className="stat-num"><em>{s.n}</em></div>
-              <div className="stat-label">{s.l}</div>
-            </div>
-          ))}
+          <AnimatedStat n="120k" l="peak rps shipped"       active={on} delay={0.60} />
+          <AnimatedStat n="12B"  l="spans / day pipeline"   active={on} delay={0.72} />
+          <AnimatedStat n="9"    l="years in production"    active={on} delay={0.84} />
+          <AnimatedStat n="4"    l="nines, sustained"       active={on} delay={0.96} />
         </div>
       </div>
     </section>
@@ -464,5 +508,6 @@ window.ProjectsSection = ProjectsSection;
 window.ContactSection = ContactSection;
 window.VerticalNav = VerticalNav;
 window.MarqueeSection = MarqueeSection;
+window.AnimatedStat = AnimatedStat;
 window.PROJECTS = PROJECTS;
 window.ART_MAP = ART_MAP;
