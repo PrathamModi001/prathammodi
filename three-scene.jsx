@@ -285,6 +285,27 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     flareGroup.position.copy(accentLight.position);
     scene.add(flareGroup);
 
+    // ── volumetric god-ray cone descending from accent light ──────────────────
+    const godRayMat = new THREE.ShaderMaterial({
+      transparent: true, side: THREE.BackSide, depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 }, uAccent: { value: new THREE.Color(accent) } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `
+        varying vec2 vUv; uniform float uTime; uniform vec3 uAccent;
+        void main(){
+          float radial = max(0.0, 1.0 - length(vUv - vec2(0.5)) * 3.2);
+          float height = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.45, vUv.y);
+          float flicker = 0.82 + 0.18 * sin(uTime * 2.1 + vUv.y * 5.0);
+          float alpha = radial * height * flicker * 0.09;
+          gl_FragColor = vec4(uAccent * alpha * 1.4, alpha);
+        }
+      `,
+    });
+    const godRay = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 9, 22, 32, 1, true), godRayMat);
+    godRay.position.set(accentLight.position.x, accentLight.position.y - 11, accentLight.position.z);
+    scene.add(godRay);
+
     // ── camera path (scroll-driven flythrough — 2.5× deeper for cinematic depth) ──
     const camCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0,  4,  38),
@@ -358,10 +379,11 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       camera.up.set(Math.sin(roll) * 0.7, Math.cos(roll), 0);
       camera.lookAt(lookAt);
 
-      // grid + nebula time
+      // grid + nebula + god ray time
       gridMat.uniforms.uTime.value = t;
       nebulaMat.uniforms.uTime.value = t;
       nebulaMat2.uniforms.uTime.value = t + 60;
+      godRayMat.uniforms.uTime.value = t;
 
       // node bobbing + ring billboarding
       nodes.forEach((n, i) => {

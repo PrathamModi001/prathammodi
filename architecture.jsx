@@ -63,6 +63,17 @@ function ArchitectureStage() {
 
   const nodeMap = React.useMemo(() => Object.fromEntries(ARCH_NODES.map(n => [n.id, n])), []);
 
+  // compute which nodes are directly connected to the hovered node
+  const connectedIds = React.useMemo(() => {
+    if (!hover) return null;
+    const s = new Set([hover]);
+    ARCH_FLOWS.forEach(f => {
+      if (f.from === hover) s.add(f.to);
+      if (f.to === hover) s.add(f.from);
+    });
+    return s;
+  }, [hover]);
+
   function pathFor(a, b) {
     const A = nodeMap[a], B = nodeMap[b];
     const dx = B.x - A.x;
@@ -150,7 +161,7 @@ function ArchitectureStage() {
       {ARCH_NODES.map((n) => (
         <div
           key={n.id}
-          className={`arch-node lyr-${n.layer} ${hover === n.id ? "lit" : ""}`}
+          className={`arch-node lyr-${n.layer} ${hover === n.id ? "lit" : ""} ${connectedIds && !connectedIds.has(n.id) ? "dimmed" : ""}`}
           style={{ left: n.x + "%", top: n.y + "%" }}
           onMouseEnter={() => setHover(n.id)}
           onMouseLeave={() => setHover(null)}

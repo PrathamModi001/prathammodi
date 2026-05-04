@@ -52,6 +52,7 @@ function App() {
     if (!gsap || !ST) return;
     gsap.registerPlugin(ST);
     const tid = setTimeout(() => {
+      // h2 clip-path wipe reveal
       document.querySelectorAll(".h2").forEach(el => {
         el.style.clipPath = "inset(0 102% 0 0)";
         gsap.to(el, {
@@ -59,6 +60,27 @@ function App() {
           duration: 1.4, ease: "power4.out",
           scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
         });
+      });
+
+      // section-label: staggered children reveal
+      document.querySelectorAll(".section-label").forEach(el => {
+        gsap.fromTo(Array.from(el.children),
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, stagger: 0.07, duration: 0.9, ease: "power3.out",
+            scrollTrigger: { trigger: el, start: "top 92%", toggleActions: "play none none none" },
+          }
+        );
+      });
+
+      // timeline items: scrub-based stagger (more cinematic than toggle)
+      const tlItems = document.querySelectorAll(".timeline-item");
+      tlItems.forEach((item, i) => {
+        gsap.fromTo(item,
+          { opacity: 0, x: -48 },
+          { opacity: 1, x: 0, duration: 1.1, ease: "power3.out",
+            scrollTrigger: { trigger: item, start: "top 85%", toggleActions: "play none none none" },
+          }
+        );
       });
     }, 300);
     return () => clearTimeout(tid);
