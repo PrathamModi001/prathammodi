@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context-mode_context-mode__ctx_fetch_and_index",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_search",
+      "Bash(curl -s \"https://api.anthropic.com/v1/design/h/hTlCPoeOQdVvuB87xyxCnw?open_file=Portfolio.html\" -H \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" -H \"User-Agent: Mozilla/5.0\" --max-time 30 -L)",
+      "Bash(curl -s \"https://api.anthropic.com/v1/design/h/hTlCPoeOQdVvuB87xyxCnw?open_file=Portfolio.html\" --compressed -H \"Accept: text/html,application/xhtml+xml\" -H \"Accept-Encoding: gzip, deflate, br\" --max-time 30 -L)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "Bash(Copy-Item \"E:\\\\Portfolio 2.0\\\\project\\\\*\" \"E:\\\\Portfolio 2.0\\\\\" -Recurse -Force; ls \"E:\\\\Portfolio 2.0\\\\\")",
+      "Bash(Select-Object Name)"
+    ]
+  }
+}
