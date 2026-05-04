@@ -1,3 +1,23 @@
+function ScrollProgressLine() {
+  const lineRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = lineRef.current;
+    if (!el) return;
+    function onScroll() {
+      const docH = document.documentElement.scrollHeight - window.innerHeight;
+      const prog = docH > 0 ? Math.min(1, window.scrollY / docH) : 0;
+      el.style.transform = `scaleY(${prog})`;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <div className="scroll-progress-track">
+      <div className="scroll-progress-fill" ref={lineRef}></div>
+    </div>
+  );
+}
+
 function App() {
   const [loaded, setLoaded] = React.useState(false);
   const [openProject, setOpenProject] = React.useState(null);
@@ -25,11 +45,31 @@ function App() {
     else document.body.style.overflow = "";
   }, [openProject]);
 
+  // global h2 clip-path wipe-reveal via GSAP ScrollTrigger
+  React.useEffect(() => {
+    if (!loaded) return;
+    const gsap = window.gsap, ST = window.ScrollTrigger;
+    if (!gsap || !ST) return;
+    gsap.registerPlugin(ST);
+    const tid = setTimeout(() => {
+      document.querySelectorAll(".h2").forEach(el => {
+        el.style.clipPath = "inset(0 102% 0 0)";
+        gsap.to(el, {
+          clipPath: "inset(0 0% 0 0)",
+          duration: 1.4, ease: "power4.out",
+          scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
+        });
+      });
+    }, 300);
+    return () => clearTimeout(tid);
+  }, [loaded]);
+
   const accent = accentHex[tweaks.accent] || accentHex.amber;
 
   return (
     <>
       <Cursor accent={accent} />
+      <ScrollProgressLine />
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
       {tweaks.grain && <div className="grain" />}
       <div className="vignette" />

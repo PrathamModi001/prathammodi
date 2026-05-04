@@ -126,4 +126,47 @@ function AnimatedTerminal() {
   );
 }
 
+function LiveMetrics() {
+  const [rps, setRps] = React.useState(120847);
+  const [latency, setLatency] = React.useState(2.4);
+  const [sparkline, setSparkline] = React.useState([40,55,48,62,58,70,65,72,68,75,71,78]);
+  const chars = "▁▂▃▄▅▆▇█";
+
+  React.useEffect(() => {
+    const iv = setInterval(() => {
+      setRps(v => v + Math.floor((Math.random() - 0.38) * 140));
+      setLatency(v => Math.max(1.1, Math.min(4.8, +(v + (Math.random() - 0.48) * 0.3).toFixed(1))));
+      setSparkline(s => {
+        const next = [...s.slice(1), Math.max(20, Math.min(95, s[s.length - 1] + (Math.random() - 0.5) * 18))];
+        return next;
+      });
+    }, 820);
+    return () => clearInterval(iv);
+  }, []);
+
+  const spark = sparkline.map(v => chars[Math.min(7, Math.floor(v / 12.5))]).join("");
+  const load = Math.round((sparkline[sparkline.length - 1] / 100) * 100);
+
+  return (
+    <div className="live-metrics">
+      <div className="lm-row">
+        <span className="lm-label">rps</span>
+        <span className="lm-val lm-accent">{rps.toLocaleString()}</span>
+        <span className="lm-spark">{spark}</span>
+      </div>
+      <div className="lm-row">
+        <span className="lm-label">p99</span>
+        <span className="lm-val">{latency}ms</span>
+        <span className="lm-label" style={{ marginLeft: "auto" }}>load</span>
+        <span className="lm-val lm-ok">{load}%</span>
+      </div>
+      <div className="lm-row">
+        <span className="lm-label">status</span>
+        <span className="lm-val lm-accent">● all systems nominal</span>
+      </div>
+    </div>
+  );
+}
+
 window.AnimatedTerminal = AnimatedTerminal;
+window.LiveMetrics = LiveMetrics;

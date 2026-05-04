@@ -241,13 +241,26 @@ function IdentityReveal({ accent }) {
             <span className="blk"><span className="blk-inner" style={{ transitionDelay: "0.44s" }}>get <em>interfaces</em></span></span>
             <span className="blk"><span className="blk-inner" style={{ transitionDelay: "0.57s" }}>that don't apologize.</span></span>
           </div>
-          <div className="identity-card">
-            <div className="identity-card-art"><ArtConcentric accent={accent} /></div>
-            <div className="identity-card-meta">
-              <div><h6>BASED</h6><b>BENGALURU · IN</b></div>
-              <div><h6>UPTIME</h6><b>9 yrs · curious</b></div>
-              <div><h6>FOCUS</h6><b>distributed systems</b></div>
-              <div><h6>STATUS</h6><b style={{ color: "var(--accent)" }}>● open Q3 26</b></div>
+          <div className="identity-card-tilt"
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const mx = (e.clientX - r.left) / r.width - 0.5;
+              const my = (e.clientY - r.top) / r.height - 0.5;
+              e.currentTarget.style.setProperty("--rx", (my * -16) + "deg");
+              e.currentTarget.style.setProperty("--ry", (mx * 16) + "deg");
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.setProperty("--rx", "0deg");
+              e.currentTarget.style.setProperty("--ry", "0deg");
+            }}>
+            <div className="identity-card">
+              <div className="identity-card-art"><ArtConcentric accent={accent} /></div>
+              <div className="identity-card-meta">
+                <div><h6>BASED</h6><b>BENGALURU · IN</b></div>
+                <div><h6>UPTIME</h6><b>9 yrs · curious</b></div>
+                <div><h6>FOCUS</h6><b>distributed systems</b></div>
+                <div><h6>STATUS</h6><b style={{ color: "var(--accent)" }}>● open Q3 26</b></div>
+              </div>
             </div>
           </div>
         </div>
@@ -314,7 +327,10 @@ function AboutTerminalSection() {
             </span>
           ))}</p>
         </div>
-        <AnimatedTerminal />
+        <div>
+          <AnimatedTerminal />
+          <LiveMetrics />
+        </div>
       </div>
     </section>
   );
