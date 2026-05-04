@@ -16,6 +16,21 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<!-- SVG filters for chromatic aberration -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <filter id="chroma-ab" color-interpolation-filters="sRGB" x="-5%" y="-5%" width="110%" height="110%">
+      <feOffset in="SourceGraphic" dx="4" dy="0" result="r"/>
+      <feColorMatrix in="r" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rCh"/>
+      <feOffset in="SourceGraphic" dx="-4" dy="0" result="b"/>
+      <feColorMatrix in="b" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="bCh"/>
+      <feMerge><feMergeNode in="rCh"/><feMergeNode in="SourceGraphic"/><feMergeNode in="bCh"/></feMerge>
+    </filter>
+  </defs>
+</svg>
 
 <script type="text/babel" src="tweaks-panel.jsx"></script>
 <script type="text/babel" src="particles.jsx"></script>

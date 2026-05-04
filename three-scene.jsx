@@ -28,7 +28,7 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
 
     // ── scene + fog (cinematic depth) ───────────────────────────────────────
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0A0A0B, 0.018);
+    scene.fog = new THREE.FogExp2(0x0A0A0B, 0.022);
 
     const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 400);
     camera.position.set(0, 4, 30);
@@ -106,6 +106,11 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       { x: 0,    y: 8,    z: -28, size: 0.8, kind: "core" },
       { x: -8,   y: 6,    z: -25, size: 0.6, kind: "service" },
       { x: 8,    y: 5,    z: -26, size: 0.6, kind: "service" },
+      { x: 3,    y: 13,   z: -36, size: 0.7, kind: "service" },
+      { x: -7,   y: 10,   z: -38, size: 0.6, kind: "service" },
+      { x: 0,    y: 16,   z: -48, size: 1.1, kind: "core" },
+      { x: -4,   y: 14,   z: -43, size: 0.5, kind: "leaf" },
+      { x: 6,    y: 12,   z: -42, size: 0.5, kind: "leaf" },
     ];
 
     const nodes = [];
@@ -136,8 +141,17 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       });
       const wire = new THREE.Mesh(wireGeo, wireMat);
 
+      // additive glow halo — fake bloom without EffectComposer
+      const haloGeo = new THREE.SphereGeometry(d.size * 4.5, 12, 12);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(accent),
+        transparent: true, opacity: d.kind === "core" ? 0.055 : 0.024,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+
       const grp = new THREE.Group();
-      grp.add(sphere); grp.add(wire); grp.add(ring);
+      grp.add(sphere); grp.add(wire); grp.add(ring); grp.add(halo);
       grp.position.set(d.x, d.y, d.z);
       grp.userData = { ...d, idx: i, baseY: d.y, ring };
       nodeGroup.add(grp);
@@ -148,7 +162,8 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     const streamGroup = new THREE.Group();
     scene.add(streamGroup);
     const links = [
-      [0,1],[0,2],[0,3],[0,4],[1,8],[2,9],[3,5],[4,5],[5,6],[5,7],[5,10],[10,11],[10,12],[6,11],[7,12],[1,6],[2,6]
+      [0,1],[0,2],[0,3],[0,4],[1,8],[2,9],[3,5],[4,5],[5,6],[5,7],[5,10],[10,11],[10,12],[6,11],[7,12],[1,6],[2,6],
+      [10,13],[11,14],[12,13],[13,15],[14,15],[15,16],[15,17],
     ];
     const streams = [];
     links.forEach(([a, b]) => {
@@ -175,7 +190,7 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     });
 
     // ── particle field (data dust) ──────────────────────────────────────────
-    const pCount = 1200;
+    const pCount = 2400;
     const pGeo = new THREE.BufferGeometry();
     const pPos = new Float32Array(pCount * 3);
     const pCol = new Float32Array(pCount * 3);
@@ -190,6 +205,16 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     }
     pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
     pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
+
+    // pre-compute morph formation: each particle assigned to a node cluster
+    const formationPos = new Float32Array(pCount * 3);
+    for (let i = 0; i < pCount; i++) {
+      const nd = nodeData[i % nodeData.length];
+      const spread = nd.kind === "core" ? 2.8 : 1.6;
+      formationPos[i*3]   = nd.x + (Math.random() - 0.5) * spread * 3.5;
+      formationPos[i*3+1] = nd.y + (Math.random() - 0.5) * spread * 3.5;
+      formationPos[i*3+2] = nd.z + (Math.random() - 0.5) * spread * 1.8;
+    }
     const pMat = new THREE.PointsMaterial({
       size: 0.06, vertexColors: true, transparent: true, opacity: 0.85,
       sizeAttenuation: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -213,22 +238,57 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     orbitGroup.position.set(0, 2, -5);
     scene.add(orbitGroup);
 
-    // ── camera path (scroll-driven flythrough) ──────────────────────────────
+    // ── volumetric nebula — FBM noise planes give smoke/atmosphere behind nodes ──
+    const nebulaMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      uniforms: { uTime: { value: 0 }, uAccent: { value: new THREE.Color(accent) } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `
+        varying vec2 vUv; uniform float uTime; uniform vec3 uAccent;
+        float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+        float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}
+        float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<5;i++){v+=a*n(p);p*=2.05;a*=0.48;}return v;}
+        void main(){
+          vec2 uv=vUv-0.5; float t=uTime*0.02;
+          float f=fbm(uv*2.5+vec2(t,t*0.65));
+          float f2=fbm(uv*4.8-vec2(t*0.4,t*1.2));
+          float cloud=pow(max(0.0,f*f2*3.2),1.7);
+          float edge=1.0-smoothstep(0.22,0.5,length(uv));
+          vec3 col=mix(vec3(0.01,0.01,0.04),uAccent*0.5,cloud);
+          float alpha=cloud*edge*0.16;
+          gl_FragColor=vec4(col*alpha,alpha);
+        }
+      `,
+    });
+    const nebulaA = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), nebulaMat);
+    nebulaA.position.set(0, 6, -24); scene.add(nebulaA);
+
+    const nebulaMat2 = nebulaMat.clone();
+    nebulaMat2.uniforms = { uTime: { value: 60 }, uAccent: { value: new THREE.Color(accent) } };
+    const nebulaB = new THREE.Mesh(new THREE.PlaneGeometry(180, 90), nebulaMat2);
+    nebulaB.position.set(2, 12, -46); scene.add(nebulaB);
+
+    // ── camera path (scroll-driven flythrough — 2.5× deeper for cinematic depth) ──
     const camCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 4, 30),
-      new THREE.Vector3(2, 3, 18),
-      new THREE.Vector3(-3, 5, 8),
-      new THREE.Vector3(0, 3.5, -2),
-      new THREE.Vector3(2, 5, -12),
-      new THREE.Vector3(0, 7, -22),
+      new THREE.Vector3(0,  4,  38),
+      new THREE.Vector3(5,  3,  24),
+      new THREE.Vector3(-6, 5.5, 12),
+      new THREE.Vector3(1,  4,   0),
+      new THREE.Vector3(-5, 6,  -14),
+      new THREE.Vector3(4,  9,  -28),
+      new THREE.Vector3(-3, 11, -42),
+      new THREE.Vector3(0,  13, -54),
     ]);
     const camLook = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 2, -5),
-      new THREE.Vector3(0, 2, -8),
-      new THREE.Vector3(0, 3, -12),
-      new THREE.Vector3(0, 4, -18),
-      new THREE.Vector3(0, 6, -24),
-      new THREE.Vector3(0, 8, -32),
+      new THREE.Vector3(0, 2,  -5),
+      new THREE.Vector3(0, 2,  -10),
+      new THREE.Vector3(0, 3,  -16),
+      new THREE.Vector3(0, 5,  -24),
+      new THREE.Vector3(0, 7,  -32),
+      new THREE.Vector3(0, 10, -42),
+      new THREE.Vector3(0, 12, -52),
+      new THREE.Vector3(0, 14, -62),
     ]);
 
     // ── mouse parallax ──────────────────────────────────────────────────────
@@ -270,16 +330,22 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       s.mouseX += (s.mouseTargetX - s.mouseX) * 0.05;
       s.mouseY += (s.mouseTargetY - s.mouseY) * 0.05;
 
-      // camera follows curve, with mouse parallax offset
-      const camPos = camCurve.getPointAt(s.scrollProgress);
-      const lookAt = camLook.getPointAt(s.scrollProgress);
+      // camera follows curve with banking roll + mouse parallax
+      const clampedP = Math.min(0.999, s.scrollProgress);
+      const camPos = camCurve.getPointAt(clampedP);
+      const lookAt = camLook.getPointAt(clampedP);
+      const camTan = camCurve.getTangentAt(clampedP);
       camera.position.copy(camPos);
       camera.position.x += s.mouseX * 1.4;
       camera.position.y += -s.mouseY * 0.8;
+      const roll = -camTan.x * 0.24;
+      camera.up.set(Math.sin(roll) * 0.7, Math.cos(roll), 0);
       camera.lookAt(lookAt);
 
-      // grid time
+      // grid + nebula time
       gridMat.uniforms.uTime.value = t;
+      nebulaMat.uniforms.uTime.value = t;
+      nebulaMat2.uniforms.uTime.value = t + 60;
 
       // node bobbing + ring billboarding
       nodes.forEach((n, i) => {
@@ -301,10 +367,16 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       orbitGroup.rotation.y = t * 0.15;
       orbitGroup.rotation.z = Math.sin(t * 0.2) * 0.1;
 
-      // particle drift
+      // particle drift + morph toward node-cluster formation on scroll
       const pa = pGeo.attributes.position.array;
+      const morphAmt = Math.max(0, Math.min(1, (s.scrollProgress - 0.22) / 0.38));
       for (let i = 0; i < pCount; i++) {
         pa[i*3+1] += Math.sin(t * 0.4 + i) * 0.0015;
+        if (morphAmt > 0.005) {
+          pa[i*3]   += (formationPos[i*3]   - pa[i*3])   * morphAmt * 0.028;
+          pa[i*3+1] += (formationPos[i*3+1] - pa[i*3+1]) * morphAmt * 0.028;
+          pa[i*3+2] += (formationPos[i*3+2] - pa[i*3+2]) * morphAmt * 0.028;
+        }
       }
       pGeo.attributes.position.needsUpdate = true;
       points.rotation.y = t * 0.01;

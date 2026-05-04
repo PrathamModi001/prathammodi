@@ -25,6 +25,60 @@ const PROJECTS = [
 
 const ART_MAP = { iso: "ArtIsoMesh", flow: "ArtFlowGraph", spectrum: "ArtSpectrum", concentric: "ArtConcentric", blueprint: "ArtBlueprint" };
 
+function ScrambleText({ text, active }) {
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789·/\\|<>{}";
+  const [out, setOut] = React.useState(text.replace(/[^\s]/g, "█"));
+  React.useEffect(() => {
+    if (!active) return;
+    let frame = 0, raf;
+    function tick() {
+      frame++;
+      const revealed = Math.min(text.length, Math.floor((frame / 40) * text.length));
+      let result = "";
+      for (let i = 0; i < text.length; i++) {
+        if (/\s/.test(text[i])) { result += text[i]; continue; }
+        result += i < revealed ? text[i] : CHARS[Math.floor(Math.random() * CHARS.length)];
+      }
+      setOut(result);
+      if (revealed < text.length) raf = requestAnimationFrame(tick);
+      else setOut(text);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, text]);
+  return <>{out}</>;
+}
+
+const MARQUEE_ITEMS = [
+  { text: "AVAILABLE · 2026", accent: true },
+  { text: "BENGALURU" },
+  { text: "BACKEND SYSTEMS" },
+  { text: "120K RPS" , accent: true },
+  { text: "DISTRIBUTED INFRA" },
+  { text: "4 NINES SLA", accent: true },
+  { text: "OPEN TO WORK" },
+  { text: "OBSERVABILITY" },
+  { text: "KAFKA · REDIS · POSTGRES" },
+  { text: "GO · RUST · NODE.JS", accent: true },
+];
+
+function MarqueeSection() {
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS]; // duplicate for seamless loop
+  return (
+    <div className="marquee-section">
+      <div className="marquee-track">
+        {items.map((it, i) => (
+          <span key={i} className="marquee-item">
+            <span className="m-dot"></span>
+            <span className={it.accent ? "m-accent" : ""}>{it.text}</span>
+            <span style={{ width: 40, display: "inline-block" }}></span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HeroSection({ accent }) {
   const [ready, setReady] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
@@ -176,7 +230,7 @@ function ArchitectureSection() {
         <span style={{ color: "var(--fg-mute)" }}>// hover any node</span>
       </div>
       <div style={{ marginBottom: 56, opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
-        <h2 className="h2">Backend, made <em>visible</em>.</h2>
+        <h2 className="h2"><ScrambleText text="Backend, made " active={on} /><em>visible</em>.</h2>
         <p style={{ marginTop: 24, fontFamily: "var(--serif)", fontSize: 22, color: "var(--fg-dim)", maxWidth: 720, lineHeight: 1.5 }}>
           Edge to gateway to services. Streams to caches to stores. The packets are real — watch them flow.
         </p>
@@ -223,61 +277,106 @@ function AboutTerminalSection() {
 }
 
 function ProjectsSection({ onOpen, accent }) {
-  const ref = React.useRef(null);
-  const on = useRevealOnView(ref, 0.05);
+  const outerRef = React.useRef(null);
+  const scrollRef = React.useRef(null);
+  const trackRef = React.useRef(null);
+  const headerOn = useRevealOnView(outerRef, 0.05);
+
+  React.useEffect(() => {
+    const gsap = window.gsap;
+    const ST = window.ScrollTrigger;
+    if (!gsap || !ST) return;
+    gsap.registerPlugin(ST);
+
+    const track = trackRef.current;
+    const scroller = scrollRef.current;
+    if (!track || !scroller) return;
+
+    const getWidth = () => track.scrollWidth - window.innerWidth;
+
+    const ctx = gsap.context(() => {
+      gsap.to(track, {
+        x: () => -getWidth() + "px",
+        ease: "none",
+        scrollTrigger: {
+          trigger: scroller,
+          pin: true,
+          scrub: 1.4,
+          end: () => "+=" + getWidth(),
+          invalidateOnRefresh: true,
+        },
+      });
+    });
+
+    return () => ctx.revert();
+  }, []);
+
+  function handleMouseMove(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width) * 100;
+    const my = ((e.clientY - r.top) / r.height) * 100;
+    e.currentTarget.style.setProperty("--mx", mx + "%");
+    e.currentTarget.style.setProperty("--my", my + "%");
+    e.currentTarget.style.setProperty("--rx", (((my / 100) - 0.5) * -18) + "deg");
+    e.currentTarget.style.setProperty("--ry", (((mx / 100) - 0.5) * 18) + "deg");
+  }
+
+  function handleMouseLeave(e) {
+    e.currentTarget.style.setProperty("--rx", "0deg");
+    e.currentTarget.style.setProperty("--ry", "0deg");
+  }
+
   return (
-    <section id="work" className="section-pad" ref={ref} data-screen-label="05 Projects">
-      <div className="section-label">
-        <span className="num">05</span>
-        <span>selected work</span>
-        <span className="ln"></span>
-        <span style={{ color: "var(--fg-mute)" }}>// 2024 → 2026</span>
-      </div>
-      <div style={{ marginBottom: 80, opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
-        <h2 className="h2">Things I shipped, <em>quietly</em>.</h2>
-      </div>
-      <div className="projects">
-        {PROJECTS.map((p, i) => {
-          const Art = window[ART_MAP[p.art]];
-          return (
-            <article
-              key={p.n}
-              className={`project ${p.size}`}
-              style={{ opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(40px)",
-                       transition: `opacity 1s var(--ease-out) ${0.15 + i * 0.08}s, transform 1.1s var(--ease-blade) ${0.15 + i * 0.08}s, border-color 0.5s var(--ease-out)` }}
-              onMouseMove={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                const mx = ((e.clientX - r.left) / r.width) * 100;
-                const my = ((e.clientY - r.top) / r.height) * 100;
-                e.currentTarget.style.setProperty("--mx", mx + "%");
-                e.currentTarget.style.setProperty("--my", my + "%");
-              }}
-              onClick={() => onOpen(p)}>
-              <div className="project-art"><Art accent={accent} /></div>
-              <div className="project-vignette"></div>
-              <div className="project-body">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                  <span className="project-num">{p.n} / 0{PROJECTS.length}</span>
-                  <span className="project-num">{p.year}</span>
-                </div>
-                <div>
-                  <h3 className="project-title">{p.title} <em>{p.em}</em></h3>
-                  <p style={{ marginTop: 18, fontFamily: "var(--mono)", fontSize: 12, lineHeight: 1.7, color: "var(--fg-dim)", maxWidth: 520, letterSpacing: "0.01em" }}>{p.blurb}</p>
-                </div>
-                <div className="project-meta">
-                  <div className="project-tags">
-                    {p.tags.map((t) => <span key={t} className="project-tag">{t}</span>)}
+    <>
+      <section id="work" className="projects-outer" ref={outerRef} data-screen-label="05 Projects">
+        <div className="section-label">
+          <span className="num">05</span>
+          <span>selected work</span>
+          <span className="ln"></span>
+          <span style={{ color: "var(--fg-mute)" }}>// 2024 → 2026 · drag to explore</span>
+        </div>
+        <div style={{ marginBottom: 64, opacity: headerOn ? 1 : 0, transform: headerOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
+          <h2 className="h2"><ScrambleText text="Things I shipped, " active={headerOn} /><em>quietly</em>.</h2>
+        </div>
+      </section>
+
+      <div className="projects-scroll" ref={scrollRef}>
+        <div className="projects-track" ref={trackRef}>
+          {PROJECTS.map((p, i) => {
+            const Art = window[ART_MAP[p.art]];
+            return (
+              <article
+                key={p.n}
+                className={`project ${p.size}`}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => onOpen(p)}>
+                <div className="project-art"><Art accent={accent} /></div>
+                <div className="project-vignette"></div>
+                <div className="project-body">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                    <span className="project-num">{p.n} / 0{PROJECTS.length}</span>
+                    <span className="project-num">{p.year}</span>
                   </div>
-                  <div className="project-arrow">
-                    <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 11 L11 3 M5 3 L11 3 L11 9" stroke="currentColor" strokeWidth="1.4" fill="none"/></svg>
+                  <div>
+                    <h3 className="project-title">{p.title} <em>{p.em}</em></h3>
+                    <p style={{ marginTop: 18, fontFamily: "var(--mono)", fontSize: 12, lineHeight: 1.7, color: "var(--fg-dim)", maxWidth: 520, letterSpacing: "0.01em" }}>{p.blurb}</p>
+                  </div>
+                  <div className="project-meta">
+                    <div className="project-tags">
+                      {p.tags.map((t) => <span key={t} className="project-tag">{t}</span>)}
+                    </div>
+                    <div className="project-arrow">
+                      <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 11 L11 3 M5 3 L11 3 L11 9" stroke="currentColor" strokeWidth="1.4" fill="none"/></svg>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          );
-        })}
+              </article>
+            );
+          })}
+        </div>
       </div>
-    </section>
+    </>
   );
 }
 
@@ -364,5 +463,6 @@ window.AboutTerminalSection = AboutTerminalSection;
 window.ProjectsSection = ProjectsSection;
 window.ContactSection = ContactSection;
 window.VerticalNav = VerticalNav;
+window.MarqueeSection = MarqueeSection;
 window.PROJECTS = PROJECTS;
 window.ART_MAP = ART_MAP;

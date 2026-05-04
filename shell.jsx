@@ -31,6 +31,9 @@ function Loader({ onDone }) {
       else {
         setTimeout(() => {
           setExiting(true);
+          // chromatic aberration flash on blade reveal
+          document.body.style.filter = "url(#chroma-ab)";
+          setTimeout(() => { document.body.style.filter = ""; }, 420);
           setTimeout(() => {
             onDone();
             window.dispatchEvent(new Event("__loader_done"));

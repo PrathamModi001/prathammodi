@@ -48,6 +48,7 @@ function App() {
 
       <main>
         <HeroSection accent={accent} />
+        <MarqueeSection />
         <IdentityReveal accent={accent} />
         <ArchitectureSection />
         <AboutTerminalSection />
