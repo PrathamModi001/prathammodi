@@ -37,42 +37,36 @@ const TIMELINE = [
   },
 ];
 
-function TimelineSection() {
+function TimelineSection({ accent = "#F4A93C" }) {
   const ref = React.useRef(null);
   return (
     <section id="timeline" className="section-pad timeline-section" ref={ref}>
-      <div className="section-label">
-        <span className="num">04</span>
-        <span>experience</span>
-        <span className="ln"></span>
-        <span style={{ color: "var(--fg-mute)" }}>// 2018 → present</span>
+      <ParticleField density={0.3} accent={accent} />
+      <div className="section-content">
+        <div className="section-label">
+          <span className="num">06</span>
+          <span>experience</span>
+          <span className="ln"></span>
+          <span style={{ color: "var(--fg-mute)" }}>// 2018 → present</span>
+        </div>
+        <div style={{ marginBottom: 80 }}>
+          <h2 className="h2">Eight years, <em>one rule:</em><br/>build it like it's <em>your</em> pager.</h2>
+        </div>
+        <ol className="timeline">
+          <div className="timeline-rail"></div>
+          {TIMELINE.map((t, i) => (
+            <TimelineItem key={i} item={t} index={i} />
+          ))}
+        </ol>
       </div>
-      <div style={{ marginBottom: 80 }}>
-        <h2 className="h2">Eight years, <em>one rule:</em><br/>build it like it's <em>your</em> pager.</h2>
-      </div>
-      <ol className="timeline">
-        <div className="timeline-rail"></div>
-        {TIMELINE.map((t, i) => (
-          <TimelineItem key={i} item={t} index={i} />
-        ))}
-      </ol>
     </section>
   );
 }
 
 function TimelineItem({ item, index }) {
   const ref = React.useRef(null);
-  const [on, setOn] = React.useState(false);
-  React.useEffect(() => {
-    if (!ref.current) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setOn(true); io.disconnect(); }
-    }, { threshold: 0.3 });
-    io.observe(ref.current);
-    return () => io.disconnect();
-  }, []);
   return (
-    <li ref={ref} className={`timeline-item ${on ? "on" : ""}`} style={{ transitionDelay: `${index * 0.08}s` }}>
+    <li ref={ref} className="timeline-item">
       <div className="timeline-dot"><span></span></div>
       <div className="timeline-card">
         <div className="timeline-year">{item.year}</div>

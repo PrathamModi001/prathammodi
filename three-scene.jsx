@@ -1,5 +1,5 @@
 // Three.js immersive landing — backend system architecture as 3D environment.
-// Camera flies through a fog-lit lattice of nodes, streams, and orbiting rings.
+// Camera flies through a fog-lit lattice of nodes, streams, and hex data rings.
 // Scroll-driven: progress 0→1 maps to camera path through scene.
 
 function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
@@ -189,85 +189,137 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       streams.push({ curve, packet, t: Math.random(), speed: 0.18 + Math.random() * 0.22 });
     });
 
-    // ── particle field (data dust) ──────────────────────────────────────────
-    const pCount = 2400;
+    // ── directed data stream particles (network traffic rushing past) ────────
+    const pCount = 1600;
     const pGeo = new THREE.BufferGeometry();
     const pPos = new Float32Array(pCount * 3);
     const pCol = new Float32Array(pCount * 3);
     const accCol = new THREE.Color(accent);
     for (let i = 0; i < pCount; i++) {
-      pPos[i*3]   = (Math.random() - 0.5) * 100;
-      pPos[i*3+1] = (Math.random() - 0.5) * 30;
-      pPos[i*3+2] = -Math.random() * 80 + 10;
-      const isAcc = Math.random() < 0.18;
-      const c = isAcc ? accCol : new THREE.Color(0xffffff);
-      pCol[i*3] = c.r; pCol[i*3+1] = c.g; pCol[i*3+2] = c.b;
+      pPos[i*3]   = (Math.random() - 0.5) * 28;
+      pPos[i*3+1] = (Math.random() - 0.5) * 18;
+      pPos[i*3+2] = -(Math.random() * 80);
+      const isAcc = Math.random() < 0.20;
+      const c = isAcc ? accCol : new THREE.Color(0.7, 0.7, 0.75);
+      pCol[i*3]   = c.r * (isAcc ? 1 : 0.4);
+      pCol[i*3+1] = c.g * (isAcc ? 1 : 0.4);
+      pCol[i*3+2] = c.b * (isAcc ? 1 : 0.4);
     }
     pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
     pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
-
-    // pre-compute morph formation: each particle assigned to a node cluster
-    const formationPos = new Float32Array(pCount * 3);
-    for (let i = 0; i < pCount; i++) {
-      const nd = nodeData[i % nodeData.length];
-      const spread = nd.kind === "core" ? 2.8 : 1.6;
-      formationPos[i*3]   = nd.x + (Math.random() - 0.5) * spread * 3.5;
-      formationPos[i*3+1] = nd.y + (Math.random() - 0.5) * spread * 3.5;
-      formationPos[i*3+2] = nd.z + (Math.random() - 0.5) * spread * 1.8;
-    }
     const pMat = new THREE.PointsMaterial({
-      size: 0.06, vertexColors: true, transparent: true, opacity: 0.85,
+      size: 0.05, vertexColors: true, transparent: true, opacity: 0.85,
       sizeAttenuation: true, depthWrite: false, blending: THREE.AdditiveBlending,
     });
     const points = new THREE.Points(pGeo, pMat);
     scene.add(points);
 
-    // ── orbit ring around hero core ─────────────────────────────────────────
-    const orbitGroup = new THREE.Group();
-    [3.5, 5.0, 6.8].forEach((r, i) => {
-      const oGeo = new THREE.TorusGeometry(r, 0.012, 8, 200);
-      const oMat = new THREE.MeshBasicMaterial({
-        color: i === 1 ? accent : 0xffffff,
-        transparent: true, opacity: i === 1 ? 0.5 : 0.18,
-      });
-      const torus = new THREE.Mesh(oGeo, oMat);
-      torus.rotation.x = Math.PI / 2 + i * 0.3;
-      torus.rotation.z = i * 0.5;
-      orbitGroup.add(torus);
-    });
-    orbitGroup.position.set(0, 2, -5);
-    scene.add(orbitGroup);
+    // ── hexagonal data rings (CPU die / data bus layers) ────────────────────
+    function makeHexRing(rOuter, rInner) {
+      const shape = new THREE.Shape();
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+        const x = Math.cos(a) * rOuter, y = Math.sin(a) * rOuter;
+        i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y);
+      }
+      shape.closePath();
+      const hole = new THREE.Path();
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+        const x = Math.cos(a) * rInner, y = Math.sin(a) * rInner;
+        i === 0 ? hole.moveTo(x, y) : hole.lineTo(x, y);
+      }
+      hole.closePath();
+      shape.holes.push(hole);
+      return new THREE.ShapeGeometry(shape, 2);
+    }
 
-    // ── volumetric nebula — FBM noise planes give smoke/atmosphere behind nodes ──
-    const nebulaMat = new THREE.ShaderMaterial({
+    const hexRingGroup = new THREE.Group();
+    const hexRingDefs = [
+      { rOuter: 3.4, rInner: 3.1, color: new THREE.Color(accent),   opacity: 1.0  },
+      { rOuter: 5.0, rInner: 4.7, color: new THREE.Color(0xffffff), opacity: 0.18 },
+      { rOuter: 6.8, rInner: 6.5, color: new THREE.Color(accent),   opacity: 0.5  },
+    ];
+    const hexRings = hexRingDefs.map((def, i) => {
+      const geo = makeHexRing(def.rOuter, def.rInner);
+      const mat = new THREE.MeshBasicMaterial({
+        color: def.color,
+        transparent: true, opacity: def.opacity,
+        side: THREE.DoubleSide, depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      // Tilts: flat/horizontal, slight tilt, near-vertical
+      if (i === 0) { mesh.rotation.x = Math.PI / 2; }
+      if (i === 1) { mesh.rotation.x = Math.PI / 2 + 0.4; }
+      if (i === 2) { mesh.rotation.z = Math.PI / 2 - 0.2; }
+      hexRingGroup.add(mesh);
+      return mesh;
+    });
+    hexRingGroup.position.set(0, 2, -5);
+    scene.add(hexRingGroup);
+
+    // ── thermal heatmap planes (server thermal monitoring / CPU heat maps) ───
+    const heatmapVertexShader = `
+      varying vec2 vUv;
+      varying float vDist;
+      void main() {
+        vUv = uv;
+        vDist = length(position.xy);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+    const heatmapFragmentShader = `
+      varying vec2 vUv;
+      varying float vDist;
+      uniform float uTime;
+      uniform vec3 uAccent;
+      float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 p) {
+        vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h(i), h(i + vec2(1,0)), u.x), mix(h(i + vec2(0,1)), h(i + vec2(1,1)), u.x), u.y);
+      }
+      float fbm(vec2 p) { float v = 0.0, a = 0.5; for(int i = 0; i < 4; i++) { v += a * n(p); p *= 2.1; a *= 0.48; } return v; }
+      void main() {
+        vec2 uv = vUv - 0.5;
+        float edge = 1.0 - smoothstep(0.28, 0.5, length(uv));
+        float heat = fbm(vUv * 5.0 + vec2(uTime * 0.03, uTime * 0.025));
+        float intensity = smoothstep(0.42, 0.72, heat);
+        vec2 grid = abs(fract(vUv * 20.0 - 0.5) - 0.5) / fwidth(vUv * 20.0);
+        float gridLine = (1.0 - min(min(grid.x, grid.y), 1.0)) * 0.06 * edge;
+        vec3 col = mix(vec3(0.02, 0.02, 0.04), uAccent * 0.8, intensity);
+        float alpha = intensity * edge * 0.10 + gridLine;
+        gl_FragColor = vec4(col, alpha);
+      }
+    `;
+
+    const heatmapMatA = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-      uniforms: { uTime: { value: 0 }, uAccent: { value: new THREE.Color(accent) } },
-      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader: `
-        varying vec2 vUv; uniform float uTime; uniform vec3 uAccent;
-        float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-        float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}
-        float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<5;i++){v+=a*n(p);p*=2.05;a*=0.48;}return v;}
-        void main(){
-          vec2 uv=vUv-0.5; float t=uTime*0.02;
-          float f=fbm(uv*2.5+vec2(t,t*0.65));
-          float f2=fbm(uv*4.8-vec2(t*0.4,t*1.2));
-          float cloud=pow(max(0.0,f*f2*3.2),1.7);
-          float edge=1.0-smoothstep(0.22,0.5,length(uv));
-          vec3 col=mix(vec3(0.01,0.01,0.04),uAccent*0.5,cloud);
-          float alpha=cloud*edge*0.16;
-          gl_FragColor=vec4(col*alpha,alpha);
-        }
-      `,
+      uniforms: {
+        uTime: { value: 0 },
+        uAccent: { value: new THREE.Color(accent) },
+      },
+      vertexShader: heatmapVertexShader,
+      fragmentShader: heatmapFragmentShader,
     });
-    const nebulaA = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), nebulaMat);
-    nebulaA.position.set(0, 6, -24); scene.add(nebulaA);
+    const heatmapA = new THREE.Mesh(new THREE.PlaneGeometry(180, 90), heatmapMatA);
+    heatmapA.position.set(0, 8, -22);
+    scene.add(heatmapA);
 
-    const nebulaMat2 = nebulaMat.clone();
-    nebulaMat2.uniforms = { uTime: { value: 60 }, uAccent: { value: new THREE.Color(accent) } };
-    const nebulaB = new THREE.Mesh(new THREE.PlaneGeometry(180, 90), nebulaMat2);
-    nebulaB.position.set(2, 12, -46); scene.add(nebulaB);
+    const heatmapMatB = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      uniforms: {
+        uTime: { value: 60 },
+        uAccent: { value: new THREE.Color(accent) },
+      },
+      vertexShader: heatmapVertexShader,
+      fragmentShader: heatmapFragmentShader,
+    });
+    const heatmapB = new THREE.Mesh(new THREE.PlaneGeometry(180, 90), heatmapMatB);
+    heatmapB.position.set(2, 14, -44);
+    scene.add(heatmapB);
 
     // ── lens flare at accent light — billboard cross + soft core ──────────────
     const flareMat = new THREE.MeshBasicMaterial({
@@ -305,6 +357,41 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
     const godRay = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 9, 22, 32, 1, true), godRayMat);
     godRay.position.set(accentLight.position.x, accentLight.position.y - 11, accentLight.position.z);
     scene.add(godRay);
+
+    // ── server rack silhouettes (data center background depth) ───────────────
+    const rackPositions = [
+      { x: -20, y: 0, z: -22 }, { x: 18,  y: 0, z: -24 },
+      { x: -24, y: 2, z: -38 }, { x: 22,  y: 1, z: -40 },
+      { x: -16, y: 4, z: -52 }, { x: 20,  y: 3, z: -50 },
+    ];
+    const rackGeo = new THREE.BoxGeometry(2.2, 5.5, 0.5);
+    const rackMat = new THREE.MeshStandardMaterial({ color: 0x0D0D14, roughness: 0.9, metalness: 0.2 });
+    const ledGeo = new THREE.SphereGeometry(0.06, 4, 4);
+    const leds = [];
+    rackPositions.forEach((pos) => {
+      const rack = new THREE.Mesh(rackGeo, rackMat);
+      rack.position.set(pos.x, pos.y, pos.z);
+      scene.add(rack);
+      for (let i = 0; i < 4; i++) {
+        const ledMat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(accent),
+          transparent: true, opacity: 0.8,
+        });
+        const led = new THREE.Mesh(ledGeo, ledMat);
+        led.position.set(pos.x + 0.7, pos.y - 1.8 + i * 0.8, pos.z + 0.3);
+        scene.add(led);
+        leds.push({ mesh: led, mat: ledMat, phase: Math.random() * Math.PI * 2, speed: 0.5 + Math.random() * 1.5 });
+      }
+    });
+
+    // ── monitoring scan band (server health sweep / radar scan) ──────────────
+    const scanMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(accent),
+      transparent: true, opacity: 0.025,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const scanBand = new THREE.Mesh(new THREE.PlaneGeometry(300, 1.2), scanMat);
+    scene.add(scanBand);
 
     // ── camera path (scroll-driven flythrough — 2.5× deeper for cinematic depth) ──
     const camCurve = new THREE.CatmullRomCurve3([
@@ -379,10 +466,10 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
       camera.up.set(Math.sin(roll) * 0.7, Math.cos(roll), 0);
       camera.lookAt(lookAt);
 
-      // grid + nebula + god ray time
+      // grid + heatmap + god ray time
       gridMat.uniforms.uTime.value = t;
-      nebulaMat.uniforms.uTime.value = t;
-      nebulaMat2.uniforms.uTime.value = t + 60;
+      heatmapMatA.uniforms.uTime.value = t;
+      heatmapMatB.uniforms.uTime.value = t + 60;
       godRayMat.uniforms.uTime.value = t;
 
       // node bobbing + ring billboarding
@@ -401,23 +488,35 @@ function ThreeScene({ accent = "#F4A93C", onProgressChange }) {
         s2.packet.position.copy(pt);
       });
 
-      // orbit rings
-      orbitGroup.rotation.y = t * 0.15;
-      orbitGroup.rotation.z = Math.sin(t * 0.2) * 0.1;
+      // hexagonal data rings — rotate at different speeds and axes
+      hexRingGroup.rotation.y = t * 0.12;
+      hexRings[1].rotation.z = t * 0.08;
+      hexRings[2].rotation.x = t * 0.06;
 
-      // particle drift + morph toward node-cluster formation on scroll
+      // directed data stream particles — stream toward -z (network traffic)
       const pa = pGeo.attributes.position.array;
-      const morphAmt = Math.max(0, Math.min(1, (s.scrollProgress - 0.22) / 0.38));
       for (let i = 0; i < pCount; i++) {
-        pa[i*3+1] += Math.sin(t * 0.4 + i) * 0.0015;
-        if (morphAmt > 0.005) {
-          pa[i*3]   += (formationPos[i*3]   - pa[i*3])   * morphAmt * 0.028;
-          pa[i*3+1] += (formationPos[i*3+1] - pa[i*3+1]) * morphAmt * 0.028;
-          pa[i*3+2] += (formationPos[i*3+2] - pa[i*3+2]) * morphAmt * 0.028;
+        pa[i*3+2] -= 0.14;
+        pa[i*3]   += Math.sin(t * 0.3 + i * 0.01) * 0.003;
+        pa[i*3+1] += Math.cos(t * 0.4 + i * 0.013) * 0.002;
+        if (pa[i*3+2] < -85) {
+          pa[i*3]   = (Math.random() - 0.5) * 28;
+          pa[i*3+1] = (Math.random() - 0.5) * 18;
+          pa[i*3+2] = 40;
         }
       }
       pGeo.attributes.position.needsUpdate = true;
-      points.rotation.y = t * 0.01;
+
+      // LED blink on server racks
+      leds.forEach((led) => {
+        led.mat.opacity = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * led.speed + led.phase));
+      });
+
+      // monitoring scan band — sawtooth sweep through y range
+      const scanCycle = 8.0;
+      const scanPhase = (t % scanCycle) / scanCycle;
+      scanBand.position.set(0, -8 + scanPhase * 28, -20);
+      scanBand.rotation.x = Math.PI / 2;
 
       // accent light pulse + flare billboard
       const lightPulse = 3.5 + Math.sin(t * 1.2) * 0.6;

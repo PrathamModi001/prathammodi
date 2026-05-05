@@ -226,6 +226,7 @@ function IdentityReveal({ accent }) {
   const on = useRevealOnView(ref, 0.2);
   return (
     <section id="identity" className="identity" ref={ref} data-screen-label="02 Identity">
+      <ParticleField density={0.35} accent={accent} />
       <div className="identity-inner">
         <div className="section-label">
           <span className="num">02</span>
@@ -275,32 +276,49 @@ function IdentityReveal({ accent }) {
   );
 }
 
-function ArchitectureSection() {
+const STACK_GROUPS = [
+  { label: "Languages", items: ["Python", "TypeScript", "JavaScript", "Java", "SQL"] },
+  { label: "Backend", items: ["Node.js", "FastAPI", "Express.js"] },
+  { label: "Frontend", items: ["React", "Next.js"] },
+  { label: "Cloud · Infra", items: ["AWS", "Docker", "Kubernetes", "GitHub Actions", "Ansible"] },
+  { label: "Data", items: ["PostgreSQL", "MongoDB", "Redis", "DynamoDB", "Supabase"] },
+  { label: "Queues", items: ["BullMQ", "Redis Queue", "Event-Driven"] },
+  { label: "Observability", items: ["OpenTelemetry", "Prometheus", "Grafana", "LGTM"] },
+  { label: "AI · ML", items: ["RAG", "Vector DBs", "Multi-Agent", "NLP"] },
+];
+
+function ArchitectureSection({ accent = "#F4A93C" }) {
   const ref = React.useRef(null);
   const on = useRevealOnView(ref, 0.05);
   return (
     <section id="stack" className="arch-section" ref={ref} data-screen-label="03 Architecture">
-      <div className="section-label">
-        <span className="num">03</span>
-        <span>system architecture · live</span>
-        <span className="ln"></span>
-        <span style={{ color: "var(--fg-mute)" }}>// hover any node</span>
-      </div>
-      <div style={{ marginBottom: 56, opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
-        <h2 className="h2"><ScrambleText text="Backend, made " active={on} /><em>visible</em>.</h2>
-        <p style={{ marginTop: 24, fontFamily: "var(--serif)", fontSize: 22, color: "var(--fg-dim)", maxWidth: 720, lineHeight: 1.5 }}>
-          Edge to gateway to services. Streams to caches to stores. The packets are real — watch them flow.
-        </p>
-      </div>
-      <div style={{ opacity: on ? 1 : 0, transition: "opacity 1.2s var(--ease-out) 0.3s" }}>
-        <ArchitectureStage />
-      </div>
-      <div style={{ display: "flex", gap: 32, marginTop: 32, fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--fg-mute)" }}>
-        <span><i style={{ display: "inline-block", width: 14, height: 1.5, background: "var(--accent)", marginRight: 8, verticalAlign: "middle" }}></i>request</span>
-        <span><i style={{ display: "inline-block", width: 14, height: 1.5, background: "#9ec5ff", marginRight: 8, verticalAlign: "middle" }}></i>cache hit</span>
-        <span><i style={{ display: "inline-block", width: 14, height: 1.5, background: "#8af1c6", marginRight: 8, verticalAlign: "middle" }}></i>db write</span>
-        <span><i style={{ display: "inline-block", width: 14, height: 1.5, background: "#ffb86b", marginRight: 8, verticalAlign: "middle" }}></i>kafka stream</span>
-        <span><i style={{ display: "inline-block", width: 14, height: 1.5, background: "rgba(245,245,244,0.5)", marginRight: 8, verticalAlign: "middle" }}></i>otel trace</span>
+      <ParticleField density={0.3} accent={accent} />
+      <div className="section-content">
+        <div className="section-label">
+          <span className="num">03</span>
+          <span>system architecture · live</span>
+          <span className="ln"></span>
+          <span style={{ color: "var(--fg-mute)" }}>// hover any node</span>
+        </div>
+        <div style={{ marginBottom: 56, opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
+          <h2 className="h2"><ScrambleText text="Backend, made " active={on} /><em>visible</em>.</h2>
+          <p style={{ marginTop: 24, fontFamily: "var(--serif)", fontSize: 22, color: "var(--fg-dim)", maxWidth: 720, lineHeight: 1.5 }}>
+            Edge to gateway to services. Streams to caches to stores. Every node below is something I've run in production.
+          </p>
+        </div>
+        <div style={{ opacity: on ? 1 : 0, transition: "opacity 1.2s var(--ease-out) 0.3s" }}>
+          <ArchitectureStage />
+        </div>
+        <div className="stack-grid" style={{ opacity: on ? 1 : 0, transition: "opacity 1s var(--ease-out) 0.5s" }}>
+          {STACK_GROUPS.map((g) => (
+            <div key={g.label} className="stack-group">
+              <div className="stack-group-label">{g.label}</div>
+              <div className="stack-group-items">
+                {g.items.map((it) => <span key={it} className="stack-chip">{it}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -338,38 +356,7 @@ function AboutTerminalSection() {
 
 function ProjectsSection({ onOpen, accent }) {
   const outerRef = React.useRef(null);
-  const scrollRef = React.useRef(null);
-  const trackRef = React.useRef(null);
   const headerOn = useRevealOnView(outerRef, 0.05);
-
-  React.useEffect(() => {
-    const gsap = window.gsap;
-    const ST = window.ScrollTrigger;
-    if (!gsap || !ST) return;
-    gsap.registerPlugin(ST);
-
-    const track = trackRef.current;
-    const scroller = scrollRef.current;
-    if (!track || !scroller) return;
-
-    const getWidth = () => track.scrollWidth - window.innerWidth;
-
-    const ctx = gsap.context(() => {
-      gsap.to(track, {
-        x: () => -getWidth() + "px",
-        ease: "none",
-        scrollTrigger: {
-          trigger: scroller,
-          pin: true,
-          scrub: 1.4,
-          end: () => "+=" + getWidth(),
-          invalidateOnRefresh: true,
-        },
-      });
-    });
-
-    return () => ctx.revert();
-  }, []);
 
   function handleMouseMove(e) {
     const r = e.currentTarget.getBoundingClientRect();
@@ -387,56 +374,51 @@ function ProjectsSection({ onOpen, accent }) {
   }
 
   return (
-    <>
-      <section id="work" className="projects-outer" ref={outerRef} data-screen-label="05 Projects">
-        <div className="section-label">
-          <span className="num">05</span>
-          <span>selected work</span>
-          <span className="ln"></span>
-          <span style={{ color: "var(--fg-mute)" }}>// 2024 → 2026 · drag to explore</span>
-        </div>
-        <div style={{ marginBottom: 64, opacity: headerOn ? 1 : 0, transform: headerOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
-          <h2 className="h2"><ScrambleText text="Things I shipped, " active={headerOn} /><em>quietly</em>.</h2>
-        </div>
-      </section>
-
-      <div className="projects-scroll" ref={scrollRef}>
-        <div className="projects-track" ref={trackRef}>
-          {PROJECTS.map((p, i) => {
-            const Art = window[ART_MAP[p.art]];
-            return (
-              <article
-                key={p.n}
-                className={`project ${p.size}`}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => onOpen(p)}>
-                <div className="project-art"><Art accent={accent} /></div>
-                <div className="project-vignette"></div>
-                <div className="project-body">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                    <span className="project-num">{p.n} / 0{PROJECTS.length}</span>
-                    <span className="project-num">{p.year}</span>
+    <section id="work" className="projects-outer" ref={outerRef} data-screen-label="05 Projects">
+      <div className="section-label">
+        <span className="num">05</span>
+        <span>selected work</span>
+        <span className="ln"></span>
+        <span style={{ color: "var(--fg-mute)" }}>// 2024 → 2026</span>
+      </div>
+      <div style={{ marginBottom: 64, opacity: headerOn ? 1 : 0, transform: headerOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 1s var(--ease-out), transform 1s var(--ease-blade)" }}>
+        <h2 className="h2"><ScrambleText text="Things I shipped, " active={headerOn} /><em>quietly</em>.</h2>
+      </div>
+      <div className="projects-grid">
+        {PROJECTS.map((p, i) => {
+          const Art = window[ART_MAP[p.art]];
+          return (
+            <article
+              key={p.n}
+              className={`project ${p.size}`}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onClick={() => onOpen(p)}>
+              <div className="project-art"><Art accent={accent} /></div>
+              <div className="project-vignette"></div>
+              <div className="project-body">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                  <span className="project-num">{p.n} / 0{PROJECTS.length}</span>
+                  <span className="project-num">{p.year}</span>
+                </div>
+                <div>
+                  <h3 className="project-title">{p.title} <em>{p.em}</em></h3>
+                  <p style={{ marginTop: 18, fontFamily: "var(--mono)", fontSize: 12, lineHeight: 1.7, color: "var(--fg-dim)", maxWidth: 520, letterSpacing: "0.01em" }}>{p.blurb}</p>
+                </div>
+                <div className="project-meta">
+                  <div className="project-tags">
+                    {p.tags.map((t) => <span key={t} className="project-tag">{t}</span>)}
                   </div>
-                  <div>
-                    <h3 className="project-title">{p.title} <em>{p.em}</em></h3>
-                    <p style={{ marginTop: 18, fontFamily: "var(--mono)", fontSize: 12, lineHeight: 1.7, color: "var(--fg-dim)", maxWidth: 520, letterSpacing: "0.01em" }}>{p.blurb}</p>
-                  </div>
-                  <div className="project-meta">
-                    <div className="project-tags">
-                      {p.tags.map((t) => <span key={t} className="project-tag">{t}</span>)}
-                    </div>
-                    <div className="project-arrow">
-                      <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 11 L11 3 M5 3 L11 3 L11 9" stroke="currentColor" strokeWidth="1.4" fill="none"/></svg>
-                    </div>
+                  <div className="project-arrow">
+                    <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 11 L11 3 M5 3 L11 3 L11 9" stroke="currentColor" strokeWidth="1.4" fill="none"/></svg>
                   </div>
                 </div>
-              </article>
-            );
-          })}
-        </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
-    </>
+    </section>
   );
 }
 

@@ -1,23 +1,3 @@
-function ScrollProgressLine() {
-  const lineRef = React.useRef(null);
-  React.useEffect(() => {
-    const el = lineRef.current;
-    if (!el) return;
-    function onScroll() {
-      const docH = document.documentElement.scrollHeight - window.innerHeight;
-      const prog = docH > 0 ? Math.min(1, window.scrollY / docH) : 0;
-      el.style.transform = `scaleY(${prog})`;
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return (
-    <div className="scroll-progress-track">
-      <div className="scroll-progress-fill" ref={lineRef}></div>
-    </div>
-  );
-}
-
 function App() {
   const [loaded, setLoaded] = React.useState(false);
   const [openProject, setOpenProject] = React.useState(null);
@@ -72,15 +52,16 @@ function App() {
         );
       });
 
-      // timeline items: scrub-based stagger (more cinematic than toggle)
+      // timeline items: smooth individual reveal, no IO conflict
       const tlItems = document.querySelectorAll(".timeline-item");
       tlItems.forEach((item, i) => {
-        gsap.fromTo(item,
-          { opacity: 0, x: -48 },
-          { opacity: 1, x: 0, duration: 1.1, ease: "power3.out",
-            scrollTrigger: { trigger: item, start: "top 85%", toggleActions: "play none none none" },
-          }
-        );
+        gsap.set(item, { opacity: 0, x: -20, y: 16 });
+        gsap.to(item, {
+          opacity: 1, x: 0, y: 0,
+          duration: 1.6, ease: "expo.out",
+          delay: i * 0.06,
+          scrollTrigger: { trigger: item, start: "top 88%", toggleActions: "play none none none" },
+        });
       });
     }, 300);
     return () => clearTimeout(tid);
@@ -91,7 +72,6 @@ function App() {
   return (
     <>
       <Cursor accent={accent} />
-      <ScrollProgressLine />
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
       {tweaks.grain && <div className="grain" />}
       <div className="vignette" />
@@ -112,10 +92,10 @@ function App() {
         <HeroSection accent={accent} />
         <MarqueeSection />
         <IdentityReveal accent={accent} />
-        <ArchitectureSection />
+        <ArchitectureSection accent={accent} />
         <AboutTerminalSection />
         <ProjectsSection onOpen={(p) => setOpenProject(p)} accent={accent} />
-        <TimelineSection />
+        <TimelineSection accent={accent} />
         <ContactSection accent={accent} />
         <footer className="foot">
           <span>© 2026 · pratham modi</span>
