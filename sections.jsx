@@ -77,7 +77,7 @@ function AnimatedStat({ n, l, active, delay }) {
 
 const MARQUEE_ITEMS = [
   { text: "AVAILABLE · 2026", accent: true },
-  { text: "BENGALURU" },
+  { text: "IIT Kanpur" },
   { text: "BACKEND SYSTEMS" },
   { text: "120K RPS" , accent: true },
   { text: "DISTRIBUTED INFRA" },
@@ -85,7 +85,7 @@ const MARQUEE_ITEMS = [
   { text: "OPEN TO WORK" },
   { text: "OBSERVABILITY" },
   { text: "KAFKA · REDIS · POSTGRES" },
-  { text: "GO · RUST · NODE.JS", accent: true },
+  { text: "NODE.JS · PYTHON · GO", accent: true },
 ];
 
 function MarqueeSection() {
@@ -187,8 +187,8 @@ function HeroSection({ accent }) {
           </div>
           <div className="hero-foot">
             <div className="col">
-              <span><b>12.97 N · 77.59 E</b></span>
-              <span>BENGALURU · IST</span>
+              <span><b>26.19 N · 80.23 E</b></span>
+              <span>IIT KANPUR · IST</span>
               <span style={{ color: "var(--accent)" }}>● AVAILABLE Q3 · 2026</span>
             </div>
             <div className="col col-r">
@@ -257,8 +257,8 @@ function IdentityReveal({ accent }) {
             <div className="identity-card">
               <div className="identity-card-art"><ArtConcentric accent={accent} /></div>
               <div className="identity-card-meta">
-                <div><h6>BASED</h6><b>BENGALURU · IN</b></div>
-                <div><h6>UPTIME</h6><b>9 yrs · curious</b></div>
+                <div><h6>BASED</h6><b>IIT KANPUR · IN</b></div>
+                <div><h6>UPTIME</h6><b>2 yrs · curious</b></div>
                 <div><h6>FOCUS</h6><b>distributed systems</b></div>
                 <div><h6>STATUS</h6><b style={{ color: "var(--accent)" }}>● open Q3 26</b></div>
               </div>

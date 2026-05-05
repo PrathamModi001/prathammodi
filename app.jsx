@@ -85,7 +85,7 @@ function App() {
 
       <div className="status-fixed">
         <div><span className="pulse"></span><b>SYSTEM · LIVE</b></div>
-        <div>BENGALURU · IST</div>
+        <div>IIT KANPUR · IST</div>
       </div>
 
       <main>

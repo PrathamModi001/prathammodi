@@ -82,8 +82,8 @@ function HeroSection({ accent }) {
           </div>
           <div className="hero-foot">
             <div className="col">
-              <span><b>12.97 N · 77.59 E</b></span>
-              <span>BENGALURU · IST</span>
+              <span><b>26.19 N · 80.23 E</b></span>
+              <span>IIT KANPUR · IST</span>
               <span style={{ color: "var(--accent)" }}>● AVAILABLE Q3 · 2026</span>
             </div>
             <div className="col col-r">
@@ -139,8 +139,8 @@ function IdentityReveal({ accent }) {
           <div className="identity-card">
             <div className="identity-card-art"><ArtConcentric accent={accent} /></div>
             <div className="identity-card-meta">
-              <div><h6>BASED</h6><b>BENGALURU · IN</b></div>
-              <div><h6>UPTIME</h6><b>9 yrs · curious</b></div>
+              <div><h6>BASED</h6><b>IIT KANPUR · IN</b></div>
+              <div><h6>UPTIME</h6><b>2 yrs · curious</b></div>
               <div><h6>FOCUS</h6><b>distributed systems</b></div>
               <div><h6>STATUS</h6><b style={{ color: "var(--accent)" }}>● open Q3 26</b></div>
             </div>
@@ -150,7 +150,7 @@ function IdentityReveal({ accent }) {
           {[
             { n: "120k", l: "peak rps shipped" },
             { n: "12B", l: "spans / day pipeline" },
-            { n: "9 yrs", l: "in production" },
+            { n: "2", l: "in production" },
             { n: "4", l: "nines, sustained" },
           ].map((s, i) => (
             <div key={i} className={`stat ${on ? "on" : ""}`} style={{ transitionDelay: `${0.6 + i * 0.12}s` }}>
