@@ -35,8 +35,15 @@ function App() {
       <div className="vignette" />
 
       <a href="#home" className="brand-fixed">
-        <span className="brand-mark"></span>
-        <span>MODI · v2.0</span>
+        <svg className="brand-mark" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="3.5" r="2.5" fill="currentColor"/>
+          <circle cx="3" cy="20.5" r="2.5" fill="currentColor" opacity="0.5"/>
+          <circle cx="21" cy="20.5" r="2.5" fill="currentColor" opacity="0.5"/>
+          <line x1="12" y1="6" x2="4.2" y2="18.5" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/>
+          <line x1="12" y1="6" x2="19.8" y2="18.5" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.3"/>
+          <line x1="5.5" y1="20.5" x2="18.5" y2="20.5" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.3"/>
+        </svg>
+        <span>MODI</span>
       </a>
 
       <VerticalNav />

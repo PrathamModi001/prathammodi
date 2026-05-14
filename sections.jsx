@@ -1,26 +1,48 @@
 // Sections: Hero (3D), Identity Reveal, Architecture, About terminal, Projects, Timeline, Contact
 
 const PROJECTS = [
-  { n: "01", title: "Atlas", em: "Mesh", size: "size-l",
-    blurb: "Multi-region service mesh with custom mTLS rotation, surfaced as a single typed RPC surface for 60+ services.",
-    art: "iso", tags: ["go","envoy","grpc","postgres","kubernetes"],
-    role: "Lead · Infra", year: "2025", scale: "120k rps · 4 nines" },
-  { n: "02", title: "Drift", em: "OTel", size: "size-m",
-    blurb: "Tracing pipeline that reduced log spend 64% while keeping span fidelity for 12B-events/day.",
-    art: "spectrum", tags: ["rust","otel","loki","grafana"],
-    role: "Solo", year: "2024", scale: "12B spans/day" },
-  { n: "03", title: "Conduit", em: "Queue", size: "size-s",
-    blurb: "Idempotent task runner over NATS — drained a 22M-task backlog in 14 minutes with zero double-execution.",
-    art: "flow", tags: ["go","nats","redis","postgres"],
-    role: "Architect", year: "2024", scale: "2.4k jobs/s" },
-  { n: "04", title: "Beacon", em: "SDK", size: "size-s",
-    blurb: "Client telemetry SDK for web + mobile with deterministic sampling and edge-buffered drop-off.",
-    art: "concentric", tags: ["typescript","wasm","cloudflare"],
-    role: "Lead", year: "2024", scale: "8M MAU" },
-  { n: "05", title: "Forge", em: "CI", size: "size-w",
-    blurb: "Build matrix and canary promotion gates with synthetic checks — cut median ship time from 41 to 12 minutes across 14 services.",
-    art: "blueprint", tags: ["actions","argocd","docker","helm"],
-    role: "Platform", year: "2025", scale: "12 min p50 ship" },
+  { n: "01", title: "DeployMind", em: "GitOps", size: "size-l",
+    blurb: "GitOps platform that eliminates manual deploys — GitHub to EC2/Kubernetes with zero-downtime strategies and auto-rollback.",
+    art: "blueprint", tags: ["node.js","kubernetes","redis","docker","aws"],
+    role: "Personal · Lead", year: "2025", scale: "canary · zero downtime",
+    link: "https://github.com/PrathamModi001/DeployMind",
+    problem: "Manual deployments to EC2 and Kubernetes are error-prone, environment-inconsistent, and impossible to audit. One bad push breaks production — with no rollback in sight.",
+    architecture: [
+      "HMAC-verified GitHub webhooks feed a Redis BRPOPLPUSH FIFO queue — no push is lost or processed twice",
+      "Sequential Security → Build → Deploy agent pipeline with distributed SET NX PX + Lua locks prevents race conditions across concurrent environments",
+      "Canary shifts traffic 10% → 50% → 100% with error-rate auto-rollback; Blue-Green swaps via health-check gate with zero idle downtime",
+      "Multi-stage Dockerfiles (non-root hardening, distroless) + Trivy security gating + HPA/PDB/topology spread for production-grade k8s",
+    ],
+    impact: ["zero-downtime deploys", "200+ unit/integration tests", "EKS + GKE support"],
+  },
+  { n: "02", title: "Apex", em: "Invoice", size: "size-m",
+    blurb: "Event-driven invoice processor ingesting from Gmail, WhatsApp, and Drive — exactly-once, fault-tolerant, fully audited.",
+    art: "flow", tags: ["kafka","redis","fastapi","node.js","postgres"],
+    role: "Hackathon Winner", year: "2024", scale: "exactly-once · fault tolerant",
+    link: "https://github.com/PrathamModi001/apex",
+    problem: "Finance teams drown in invoices scattered across email, WhatsApp, and cloud storage — processed manually, rife with duplicates, and with zero audit trail.",
+    architecture: [
+      "Multi-source ingestion (Gmail API, WhatsApp Business API, Google Drive) feeds Kafka/Redis Streams with consumer groups and backpressure control",
+      "Exactly-once guarantee via content hashing + transactional DB writes + concurrency-safe duplicate detection under parallel uploads",
+      "Dead-letter queues, schema validation, and retry/backoff policies prevent silent data loss at every stage",
+      "RBAC human-review workflow with structured audit logging and metrics-driven observability across throughput, latency, and error rate",
+    ],
+    impact: ["hackathon winner", "exactly-once delivery", "3-source ingestion"],
+  },
+  { n: "03", title: "ContextBridge", em: "AI Dev", size: "size-w",
+    blurb: "Live codebase state server that stops AI assistants from generating code against stale repo context during parallel development.",
+    art: "iso", tags: ["typescript","tree-sitter","websocket","ast","rest"],
+    role: "Personal · Solo", year: "2025", scale: "real-time · semantic diff",
+    link: "https://github.com/PrathamModi001/ContextBridge",
+    problem: "AI coding assistants hallucinate against stale repo snapshots. In parallel development, two assistants editing the same interface simultaneously produce silent contract breaks that surface only at merge time.",
+    architecture: [
+      "WebSocket server synchronizes every working-tree change across the team in real time — no polling, no stale state, no lag",
+      "Tree-sitter AST parser builds a live cross-file dependency graph tracking function signatures, types, and exports",
+      "Contract-level change detection flags when a signature or type export changes — not just file-level modifications",
+      "REST + WebSocket APIs expose the current live state of any interface so AI assistants query before generating code",
+    ],
+    impact: ["real-time AST diffing", "semantic conflict prevention", "AI-assistant native API"],
+  },
 ];
 
 const ART_MAP = { iso: "ArtIsoMesh", flow: "ArtFlowGraph", spectrum: "ArtSpectrum", concentric: "ArtConcentric", blueprint: "ArtBlueprint" };
@@ -79,13 +101,13 @@ const MARQUEE_ITEMS = [
   { text: "AVAILABLE · 2026", accent: true },
   { text: "IIT Kanpur" },
   { text: "BACKEND SYSTEMS" },
-  { text: "120K RPS" , accent: true },
+  { text: "2M+ USERS SERVED", accent: true },
   { text: "DISTRIBUTED INFRA" },
-  { text: "4 NINES SLA", accent: true },
+  { text: "99.9% UPTIME", accent: true },
   { text: "OPEN TO WORK" },
   { text: "OBSERVABILITY" },
   { text: "KAFKA · REDIS · POSTGRES" },
-  { text: "NODE.JS · PYTHON · GO", accent: true },
+  { text: "NODE.JS · PYTHON · FASTAPI", accent: true },
 ];
 
 function MarqueeSection() {
@@ -169,7 +191,7 @@ function HeroSection({ accent }) {
         <div className="hero-overlay">
           <div className="hero-eyebrow">
             <span className="dot"></span>
-            <span>ENTERING SYSTEM · v2.0</span>
+            <span>ENTERING SYSTEM</span>
             <span style={{ color: "var(--fg-mute)" }}>·</span>
             <span>RUNTIME / READY</span>
           </div>
@@ -193,7 +215,7 @@ function HeroSection({ accent }) {
             </div>
             <div className="col col-r">
               <span>scroll · transition</span>
-              <span><b>120k</b> RPS · <b>4</b> NINES</span>
+              <span><b>2M+</b> USERS · <b>99.9%</b> UPTIME</span>
               <span>last deploy · {new Date().toISOString().slice(0,10)}</span>
             </div>
           </div>
@@ -266,10 +288,10 @@ function IdentityReveal({ accent }) {
           </div>
         </div>
         <div className="stat-row">
-          <AnimatedStat n="120k" l="peak rps shipped"       active={on} delay={0.60} />
-          <AnimatedStat n="12B"  l="spans / day pipeline"   active={on} delay={0.72} />
-          <AnimatedStat n="9"    l="years in production"    active={on} delay={0.84} />
-          <AnimatedStat n="4"    l="nines, sustained"       active={on} delay={0.96} />
+          <AnimatedStat n="2M+"  l="users served"           active={on} delay={0.60} />
+          <AnimatedStat n="500K+" l="daily notifications"   active={on} delay={0.72} />
+          <AnimatedStat n="2"    l="yrs in production"      active={on} delay={0.84} />
+          <AnimatedStat n="99.9" l="% uptime sustained"     active={on} delay={0.96} />
         </div>
       </div>
     </section>
@@ -364,13 +386,6 @@ function ProjectsSection({ onOpen, accent }) {
     const my = ((e.clientY - r.top) / r.height) * 100;
     e.currentTarget.style.setProperty("--mx", mx + "%");
     e.currentTarget.style.setProperty("--my", my + "%");
-    e.currentTarget.style.setProperty("--rx", (((my / 100) - 0.5) * -18) + "deg");
-    e.currentTarget.style.setProperty("--ry", (((mx / 100) - 0.5) * 18) + "deg");
-  }
-
-  function handleMouseLeave(e) {
-    e.currentTarget.style.setProperty("--rx", "0deg");
-    e.currentTarget.style.setProperty("--ry", "0deg");
   }
 
   return (
@@ -392,7 +407,6 @@ function ProjectsSection({ onOpen, accent }) {
               key={p.n}
               className={`project ${p.size}`}
               onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
               onClick={() => onOpen(p)}>
               <div className="project-art"><Art accent={accent} /></div>
               <div className="project-vignette"></div>
@@ -437,15 +451,14 @@ function ContactSection({ accent }) {
         </div>
         <h2 className="contact-line" style={{ opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(30px)", transition: "opacity 1.2s var(--ease-out), transform 1.4s var(--ease-blade)" }}>
           Got a system that <em>misbehaves?</em><br/>
-          <a href="mailto:hello@modi.dev">say&nbsp;hello&nbsp;→</a>
+          <a href="mailto:prathammodi001@gmail.com">say&nbsp;hello&nbsp;→</a>
         </h2>
         <div className="contact-meta">
-          <div><div style={{ color: "var(--fg-mute)", marginBottom: 4 }}>EMAIL</div><b>hello@modi.dev</b></div>
+          <div><div style={{ color: "var(--fg-mute)", marginBottom: 4 }}>EMAIL</div><b>prathammodi001@gmail.com</b></div>
           <div><div style={{ color: "var(--fg-mute)", marginBottom: 4 }}>SOCIAL</div>
-            <a href="#">github / modi</a> · <a href="#">x / prathamodi</a> · <a href="#">linkedin</a>
+            <a href="https://github.com/PrathamModi001" target="_blank" rel="noopener noreferrer">github.com/PrathamModi001</a> · <a href="https://x.com/PrathamModii" target="_blank" rel="noopener noreferrer">x / PrathamModii</a> · <a href="https://www.linkedin.com/in/prathammodii001/" target="_blank" rel="noopener noreferrer">linkedin</a>
           </div>
           <div><div style={{ color: "var(--fg-mute)", marginBottom: 4 }}>STATUS</div><b style={{ color: "var(--accent)" }}>● open · q3 2026</b></div>
-          <div><div style={{ color: "var(--fg-mute)", marginBottom: 4 }}>SIGNAL</div><b>pgp · 0xA1F4 9C2D</b></div>
         </div>
       </div>
     </section>
